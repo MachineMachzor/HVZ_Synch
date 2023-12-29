@@ -57,19 +57,19 @@ scope = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/drive.file'
     ]
-file_name = r'C:\Users\ringk\Documents\RandomScripts\HVZ\client.json'
+file_name = r'D:\HVZ-main\client.json'
 creds = ServiceAccountCredentials.from_json_keyfile_name(file_name,scope)
 gClient = gspread.authorize(creds)
 
 # Sheet name
 googleSheetName = "HVZ Web"
 #Fetch the sheet
-sheet = gClient.open(googleSheetName).sheet1
+# sheet = gClient.open(googleSheetName).sheet1
 pp = pprint.PrettyPrinter() #pprint() provided by PrettyPrinter() beautifies the JSON response.
 
 # UPDATE Cell with our link
 # RUN THIS
-sheet.update_cell(1,1,ngrok_tunnel.public_url)
+# sheet.update_cell(1,1,ngrok_tunnel.public_url)
 
 
 
@@ -90,7 +90,7 @@ models.Base.metadata.create_all(bind=engineMissions)
 
 
 #Look inside our templates folder
-templates = Jinja2Templates(directory=r"C:\Users\Tanner\Downloads\HVZ-main\templates")
+templates = Jinja2Templates(directory=r"D:\HVZ-main")
 
 #Check if incoming data equals this, if so don't use it
 noneVal = "none"
@@ -198,9 +198,9 @@ async def token_generate(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 #Making the icon
-# favicon_path = r'C:\Users\ringk\Documents\RandomScripts\HVZ\iconImg.ico'
+# favicon_path = r'D:\HVZ-main\iconImg.ico'
 
-# #include_in_schema makes it not be searchable with this port
+# # #include_in_schema makes it not be searchable with this port
 # @app.get('/favicon.ico', include_in_schema=False)
 # async def favicon():
 #     return FileResponse(favicon_path)
@@ -228,7 +228,7 @@ def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Dep
     # request.session['username'] = ""
 
     #For HVZ table with stats
-    headers = ['Name', 'Team', 'Tagged By', 'Tags', 'Moderator', "Days Alive"]
+    headers = ['Name', 'Tagged By', 'Tags', 'Moderator', "Days Alive"]
     # print(uuid.uuid4().hex[:8].upper())
 
     # Should codes to turn people into a zombie be similar to "164EFDD8" or "taco13294"
@@ -370,6 +370,175 @@ def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Dep
     users = db2.query(userPass)
 
     return templates.TemplateResponse("home.html", 
+    {"request": request, 
+    "headers":headers,
+    "players":players,
+    "users": users,
+    "gameInfo": gameInfo,
+    "logged_in": loggedInSession, #Get the boolean if logged in
+    "username": userLogged,
+    "isAdmin": isAdmin,
+    "isPresident": isPresident,
+    "cursor": cursor,
+    "isOnTableOrSignedUp": isOnTableOrSignedUp,
+    "secretKey": secretKey,
+    "modify":"noModify"})
+
+
+@app.get("/weeklong")
+def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Depends(get_userPass_db)):
+    global isLoggedIn, usernameForLogin, isAdmin
+    """
+    Has the table of humans and...ZOMBIES AHAHAH (View only)
+
+    Variable "modify":"noModify" is used in layout.html to NOT display Add Player, Delete all, etc
+    """
+    # request.session['isAdmin'] = False #Have these session keys initialized, we can't init login here since we can't update it here
+    # request.session['username'] = ""
+
+    #For HVZ table with stats
+    headers = ['Name', 'Tagged By', 'Tags', 'Moderator', "Days Alive"]
+    # print(uuid.uuid4().hex[:8].upper())
+
+    # Should codes to turn people into a zombie be similar to "164EFDD8" or "taco13294"
+
+
+
+    conn = sqlite3.connect("userPass.db")
+    conn.row_factory = sqlite3.Row #Make data indexable rows
+    cursor = conn.cursor() #Write to the db
+    loggedInSession = False
+    isAdmin = False
+    userLogged = ""
+    isOnTableOrSignedUp = False
+    isPresident = verifyPresidentOrVP(request)
+
+    try:
+        #Session = deals with each UNIQUE user on the site (each "request session")
+        loggedInSession = request.session.get('logged_in')
+        userLogged = request.session.get("username")
+        
+
+        
+        if userLogged != "":
+            #Check if this user is an admin
+            conn = sqlite3.connect("userPass.db")
+            conn.row_factory = sqlite3.Row #Make data indexable rows
+            cursor = conn.cursor() #Write to the db
+
+            #
+            cursor.execute(f"""
+                SELECT isAdmin FROM userPass where username='{userLogged}'
+            """)
+            isAdmin = cursor.fetchall() 
+            # print(isAdmin)
+            
+            if len(isAdmin) >= 1:
+                if isAdmin[0]['isAdmin'] == True:
+                    request.session['isAdmin'] = True
+                else:
+                    request.session['isAdmin'] = False
+            else:
+                request.session['isAdmin'] = False #If no admin value even filled in, they're not an admin
+            isAdmin = request.session.get('isAdmin')
+            
+
+            conn2 = sqlite3.connect("hvz.db")
+            conn2.row_factory = sqlite3.Row #Make data indexable rows
+            cursor2 = conn2.cursor() #Write to the db
+
+            cursor2.execute(f"""
+                SELECT name FROM hvzPlayers WHERE name='{userLogged}'
+            """)
+            userInTable = cursor2.fetchone()
+
+            cursor.execute(f"""
+                SELECT signedUp FROM userPass WHERE username='{userLogged}'
+            """)
+            signedUp = cursor.fetchone()['signedUp']
+            if userInTable == None and isAdmin == False and (signedUp == 0 or signedUp == None): #If the user IS NOT on the table currently and isn't an admin AND they haven't already clicked sign up
+                isOnTableOrSignedUp = True
+        else:
+            print("No user logged in")
+            
+
+
+        
+        
+        # if userLogged == "t": #The username "t" will always have admin rights (this doesn't work)
+        #     request.session['isAdmin'] = True
+            
+    except:
+        traceback.print_exc() #keyerror exception
+        pass
+
+
+    #Load all players from db
+    conn = sqlite3.connect("hvz.db")
+    conn.row_factory = sqlite3.Row #Make data indexable rows
+    cursor = conn.cursor() #Write to the db
+    curId = 1
+
+    players = db.query(hvzPlayer)
+    users = db2.query(userPass)
+    for player in players:
+        #Always refresh id's to be 1,2,3 (normal primary key id doesn't do this, we need this for the table)...
+        name = player.name
+        if name != None:
+            cursor.execute(f"""
+                UPDATE hvzPlayers SET readjustingId =  {curId} WHERE name = '{name}'
+            """)
+            curId += 1
+    secretKey = ""
+    for player in players:
+        for user in users:
+            if player.name == user.username and player.name == userLogged:
+                secretKey = user.secretKey
+
+    #Check if the announcements username is inserted
+    # cursor.execute(f"""
+    #     SELECT announcement FROM hvzPlayers WHERE name = '{config.ridiculousAnnouncementName}'
+    # """)
+
+    # Fetch the announcements
+    cursor.execute(f"""
+        SELECT announcement FROM hvzPlayers WHERE announcementId == 1
+    """)
+    
+    # INSERT INTO stock (symbol, company) VALUES ('AAPL', 'Apple');
+    announcements = cursor.fetchone()
+    
+
+    #Creates a spot in the player database for the announcements
+    #With this, we have to realize that it's a new player, so don't give this recognition by saying if name != None (the object, or string)
+    if announcements == None or announcements == "None":
+        cursor.execute(f"""
+            INSERT INTO hvzPlayers (announcementId, announcement) VALUES (1, ' ')
+        """)
+    # print(f"Announcement: {announcements}")
+
+
+    cursor.close()
+    conn.commit()
+
+    gameInfo = [0, 0, 0] # TotalPlayers, numHumans, numZombies 
+
+    
+
+
+
+
+    # for player in players: #For each player in the game (in the table, players, list)
+    #     if player.team == "Human":
+    #         gameInfo[1] += 1
+    #     elif player.team == "Zombie":
+    #         gameInfo[2] += 1
+    #     gameInfo[0] += 1
+
+    # Load all users from login
+    users = db2.query(userPass)
+
+    return templates.TemplateResponse("weeklong.html", 
     {"request": request, 
     "headers":headers,
     "players":players,
