@@ -1,54 +1,128 @@
 
 
 <html>
-  <head>
-    <title>New Paltz HVZ</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css">
-    <style>
-      body {
-        background-color: rgb(31, 31, 32);
-      }
-      .navbar {
-        margin: 20px;
-      }
-      .navbar a {
-        color: white;
-        font-size: large;
-        font-weight: bold;
-        margin-right: 10px;
-      }
-      .navbar .login-button {
-        background-color: rgb(54, 54, 54);
-        border-radius: 5px;
-        padding: 5px 10px;
-        color: white;
-        font-weight: bold;
-        font-size: large;
-        float: right;
-      }
-    </style>
-  </head>
-  
-  <body>
-    <div class="navbar">
-      <a href="/">Home</a>
-      <a href="weeklong">Weeklong</a>
-      <a href="https://www.instagram.com/nphvz/">Instagram</a>
-      <a href="https://discord.com/invite/fMAfykJtgJ">Discord</a>
-      <a href="/profile">Profile</a>
-      <a href="/logout" class="login-button" id="login">Logout</a>
-    </div>
-        
-        <h1>Welcome to My Website</h1>
-        <p>This is the home page.</p>
-        
-    </body>
+    <head>
+        <title>New Paltz HVZ</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css">
+        <style>
+            body {
+                background-color: rgb(31, 31, 32);
+            }
+            .navbar {
+                margin: 20px;
+            }
+            .navbar a {
+                color: white;
+                font-size: large;
+                font-weight: bold;
+                margin-right: 10px;
+            }
+            .navbar .login-button {
+                background-color: rgb(54, 54, 54);
+                border-radius: 5px;
+                padding: 5px 10px;
+                color: white;
+                font-weight: bold;
+                font-size: large;
+                float: right;
+            }
+            .error-message {
+                color: red;
+            }
+        </style>
+    </head>
+    
+    <body>
+                <div class="navbar">
+                        <a href="/">Home</a>
+                        <a href="https://www.instagram.com/nphvz/">Instagram</a>
+                        <a href="https://discord.com/invite/fMAfykJtgJ">Discord</a>
+                        <a href="weeklong">Weeklong</a>
+                        <a href="/profile">Profile</a>
+                        <a href="/logout" class="login-button" id="logout">Logout</a>
+                </div>
+                
+
+
+                <img src="{{playerObj.profilePic}}" alt="Profile Picture" width="60" height="50" style="padding-left: 10px;">
+                <p style="color: white; font-size: large; font-weight: bold; margin: 10px 0; padding-left: 10px;">Team: {{'' if tableObjectPlayer.customTeam == None else tableObjectPlayer.customTeam}}</p>
+                <div class="ui inverted segment">
+                        <div class="ui inverted form">
+                            <div class="one field">
+                                <div class="field">
+                                    <label>Image</label>
+                                    <input id="profilePic" type="file" accept="image/*">
+                                </div>
+                                <div class="field">
+                                      <label>Custom Team</label>
+                                      <input id="team" placeholder="Team" type="text">
+                                </div>
+                            </div>
+                            <div class="inline field">
+                                <div class="ui checkbox">
+                                    <input type="checkbox" tabindex="0" class="hidden">
+                                </div>
+                            </div>
+                            <div id="submit" class="ui submit button">Submit</div>
+                        </div>
+                        <div id="errorContainer"></div>
+                </div>
+
+
+                
+        </body>
 </html>
 
+<script>
+  $(document).ready(function() {
+    $("#submit").click(function() {
+            var image = $("#profilePic").val();
+            var team = $("#team").val();
+            
+            if (image != "") {
+              var reader = new FileReader();
+              
+              reader.onload = function(e) {
+                      var base64Image = e.target.result;
+                      console.log(base64Image);
 
-<!-- 
+                      var data = {
+                        webPass: "t2]9k4%,AyW$k}fU",
+                        profilePic: base64Image
+                      };
+                      $.ajax({
+                          url: "/profileApiCall",
+                          type: "POST",
+                          contentType: "application/json",
+                          data: JSON.stringify(data),
+                          dataType: "json",
+                          success: function(response) {
+                            // console.log(response);
+                            location.reload()
+                          }
+                      });
+                };
+                reader.readAsDataURL($("#profilePic")[0].files[0]);
+            }
 
-    
+            if (team != "") {
+              var data = {
+                team: team
+              };
+              $.ajax({
+                url: "/updateTeam",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                dataType: "json",
+                success: function(response) {
+                  // console.log(response);
+                  location.reload()
+                }
+              });
+            }
 
-
- -->
+    });
+});      
+</script>

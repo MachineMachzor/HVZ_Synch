@@ -1,0 +1,129 @@
+
+
+<html>
+  <head>
+    <title>New Paltz HVZ</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      body { 
+        background-color: rgb(31, 31, 32);
+      }
+      .navbar {
+        margin: 20px;
+      }
+      .navbar a {
+        color: white;
+        font-size: large;
+        font-weight: bold;
+        margin-right: 10px;
+      }
+      .navbar .login-button {
+        background-color: rgb(54, 54, 54);
+        border-radius: 5px;
+        padding: 5px 10px;
+        color: white;
+        font-weight: bold;
+        font-size: large;
+        float: right;
+      }
+    </style>
+  </head>
+  
+  <body>
+    <div class="navbar">
+      <a href="/">Home</a>
+      
+      <a href="https://www.instagram.com/nphvz/">Instagram</a>
+      <a href="https://discord.com/invite/fMAfykJtgJ">Discord</a>
+      {% if logged_in == False %}
+        <a href="/login" class="login-button" id="login">Login</a>
+      {% else %}
+        <a href="weeklong">Weeklong</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout" class="login-button" id="logout">Logout</a>
+      {% endif %}
+    </div>
+
+    <table class="ui inverted table">
+      <thead>
+        <tr>
+            <th>Username</th>
+            <th>Accept</th>
+            <th>Deny</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          <tr>
+            {% if user.signedUp and user.username not in playersInTable %}
+              <td>{{ user.username }}</td>
+              <td class="accept"  style="background-color: rgb(9, 56, 9); cursor:pointer"></td>
+              <td class="reject" style="background-color: rgb(56, 9, 9); cursor:pointer"></td>
+            {% endif %}
+          </tr>
+          
+        {% endfor %}
+
+       
+      </tbody>
+      
+    </table>
+
+    
+
+    
+        
+        
+    </body>
+</html>
+
+
+<script>
+  $(document).ready(function() {
+    $("table tbody tr td.accept").on("click", function() {
+      var username = $(this).closest("tr").find("td:first").text();
+      console.log(username);
+
+      var userData = {
+        username: username
+      }
+
+      $.ajax({
+        url: "/acceptIntoWeeklong",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(userData),
+        dataType: "json",
+        success: function(data) {
+          console.log(data);
+          location.reload()
+        }
+      });
+    });
+  });
+
+  $(document).ready(function() {
+    $("table tbody tr td.reject").on("click", function() {
+      var username = $(this).closest("tr").find("td:first").text();
+      console.log(username);
+
+      var userData = {
+        username: username
+      }
+      $.ajax({
+        url: "/rejectIntoWeeklong",
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify(userData),
+        dataType: "json",
+        success: function(data) {
+          console.log(data);
+          location.reload()
+        }
+      });
+    });
+  });
+</script>
+
+

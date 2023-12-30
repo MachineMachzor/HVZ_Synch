@@ -2,6 +2,7 @@
     <head>
         <title>Weeklong</title>
         <link rel="shortcut icon" type="image/x-icon" href="iconImg.ico">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css">
         <style>
             body {
@@ -40,8 +41,14 @@
               <a href="/profile">Profile</a>
               <a href="/logout" class="login-button" id="logout">Logout</a>
             {% endif %}
+            {% if isAdmin or isPresident %}
+              <a style="background-color: rgb(105, 105, 15);" href="/viewSignedUpPlayers">Waitlist</a>
+            {% endif %}
         </div>
+
         
+        
+        {% if userInTable or isAdmin or isPresident %}
         <table class="ui inverted table">
             <thead>
               <tr>
@@ -56,19 +63,32 @@
                     {% if user.username == player.name %}
                         {% if player.hiddenOZ and isAdmin %}
                           <tr style="background-color: rgb(112, 8, 81)">
-                        {% elif player.team == "Zombie" %}
+                        {% elif player.team == "Zombie" and (player.hiddenOZ == False or player.hiddenOZ == None) %}
                           <tr style="background-color: rgb(94, 8, 8)">
-                        {% elif player.team == "Human" %}
+                        {% elif player.team == "Human" or (player.hiddenOZ and isAdmin == False) %}
                           <tr style="background-color: rgb(8, 94, 8)">
                         {% endif %}
-                            <td>{{ player.profileImg }}</td>
-                            <!-- <td> 1</td> -->
-                            <td> {{player.name}} </td>
+                            <td><img src='{{user.profilePic}}' width="40px" height="40px"></td>
+                            <td>{{ player.name }}</td>
+                            <td>{{ '' if player.customTeam == None else player.customTeam }}</td>
                             <td>{{ '' if player.taggedBy == None else player.taggedBy }}</td>
-                            <td>{{ player.tags }}</td>
-                            <td>{{ '' if player.ifMod == None else "Mod" }}</td>
-                            <td>{{ '' if player.daysAliveCount == None else player.daysAliveCount }}</td>
-                        </tr>
+                            <td>{{ 0 if player.hiddenOZ else player.tags }}</td>
+                            <td>{{ '' if (player.ifMod == None or player.ifMod == False) else "Mod" }}</td>
+                            <!-- <td>{{ player.ifMod }}</td> -->
+                            <td>{{ '' if player.daysAliveCount == None else player.daysAliveCount }} 
+                              {% if isPresident %}
+                                <button class="ui green mini button" onclick="makeHuman('{{ player.name }}')">Human</button>
+                                <button class="ui red mini button" onclick="makeZombie('{{ player.name }}')">Zombie</button>
+                                <button class="ui pink mini button" onclick="makeOZ('{{ player.name }}')">OZ</button>
+                                <button class="ui yellow mini button" onclick="incTag('{{ player.name }}')">++Tag</button>
+                                <button class="ui blue mini button" onclick="decTag('{{ player.name }}')">--Tag</button>
+                                <button class="ui teal mini button" onclick="incDay('{{ player.name }}')">++Days</button>
+                                <button class="ui purple mini button" onclick="decDay('{{ player.name }}')">--Days</button>
+                                <button class="ui grey mini button" onclick="mod('{{ player.name }}')">Mod</button>
+                                <button class="ui black mini button" onclick="deleteUser('{{ player.name }}')">Delete</button>
+                              {% endif %}
+                            </td>  
+                        </tr>   
                     {% endif %}
                   {% endfor %}
               {% endfor %}
@@ -76,20 +96,302 @@
             </tbody>
             
           </table>
-          {% for user in users %}
-                {% for player in players %}
-                    {% if user.username == player.name %}
-                        {{ player.team }}
-                    {% endif %}
-                  {% endfor %}
-              {% endfor %}
-    </body>
+          {% else %}
+            {% if signedUp == 0 or signedUp == None %}
+              <button class="ui green button" onclick="requestToPlay()">Request to Play</button>
+            {% else %}
+              <p class="ui yellow button">Waiting to be accepted into Weeklong...</p>
+            {% endif %}
+          {% endif %}
+<!-- {% for user in users %}
+  {% for player in players %}
+    {% if user.username == player.name %}
+      {{ player.team }}
+    {% endif %}
+  {% endfor %}
+{% endfor %} -->
+
+
+<script>
+  function requestToPlay() {
+    const payload = {
+      webPass: "t2]9k4%,AyW$k}fU"
+    };
+
+    fetch('/requestToPlayApiCall', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      // Handle response data
+      location.reload();
+    })
+    .catch(error => {
+      // Handle error
+    });
+  }
+
+
+  function makeZombie(user) {
+    var payload = {
+      username: user,
+      team: "Zombie"
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/zombinizeOrHumanize',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+  
+
+  function makeHuman(user) {
+    var payload = {
+      username: user,
+      team: "Human"
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/zombinizeOrHumanize',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+  function makeOZ(user) {
+    var payload = {
+      username: user
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/makeOZ',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+
+  function incTag(user) {
+    var payload = {
+      username: user
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/addTag',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+
+  function decTag(user) {
+    var payload = {
+      username: user
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/decTag',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+  function incDay(user) {
+    var payload = {
+      username: user
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/addDay',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+  function decDay(user) {
+    var payload = {
+      username: user
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/decDay',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+  function deleteUser(user) {
+    var payload = {
+      username: user
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/delPlayer',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+  function mod(user) {
+    var payload = {
+      username: user
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/modPlayer',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+  
+
+  function deleteUser(user) {
+    var payload = {
+      username: user
+    };
+
+    // console.log(payload)
+    $.ajax({
+          url: '/delPlayer',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(payload),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            location.reload();            
+              
+          },
+          error: function(error) {
+            // Handle error response
+            // print(console.log(error))
+          }
+    });
+  }
+
+  
+
+
+
+</script>
+
+</body>
 </html>
+         
 
 
-<!-- 
-
-    
-
-
- -->

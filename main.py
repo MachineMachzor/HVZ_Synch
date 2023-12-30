@@ -398,7 +398,7 @@ def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Dep
     # request.session['username'] = ""
 
     #For HVZ table with stats
-    headers = ['Profile', 'Name', 'Tagged By', 'Tags', 'Moderator', "Days Alive"]
+    headers = ['Profile', 'Name', 'Team', 'Tagged By', 'Tags', 'Moderator', "Days Alive"]
     # print(uuid.uuid4().hex[:8].upper())
 
     # Should codes to turn people into a zombie be similar to "164EFDD8" or "taco13294"
@@ -550,7 +550,9 @@ def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Dep
     "isAdmin": isAdmin,
     "isPresident": isPresident,
     "cursor": cursor,
+    "userInTable": userInTable,
     "isOnTableOrSignedUp": isOnTableOrSignedUp,
+    "signedUp": signedUp,
     "secretKey": secretKey,
     "modify":"noModify"})
 
@@ -600,6 +602,7 @@ def profile(request: Request, db: Session = Depends(get_db), db2: Session = Depe
     conn2.row_factory = sqlite3.Row #Make data indexable rows
     cursor2 = conn2.cursor() #Write to the db
 
+    tableObjectPlayer = None
 
 
 
@@ -612,6 +615,7 @@ def profile(request: Request, db: Session = Depends(get_db), db2: Session = Depe
     
     for player in players:
         if player.name == user:
+            tableObjectPlayer = player
             if player.tags != None:
                 if player.tags >= 3:
                     cursor2.execute(f"""
@@ -642,25 +646,22 @@ def profile(request: Request, db: Session = Depends(get_db), db2: Session = Depe
         SELECT * FROM userPass where username = "{user}";
     """)
     playerObj = cursor.fetchone()
-    
-    
-
-        
-    # print("in profile")
-
-
-
-
+    print(f"tableObjectPlayer['customTeam'] {tableObjectPlayer.customTeam}")
     if playerObj != None: #This has to equal user, which is the session logged in, so plr has to be logged in
         return templates.TemplateResponse("profile.html",
         {"request": request,
         "user": user,
         "playerObj":playerObj,
+        "tableObjectPlayer": tableObjectPlayer,
         "users": users})
 
 class profileApiCall(BaseModel):
     webPass: str 
     profilePic: str
+
+class changeTeam(BaseModel):
+    team: str
+
 
 @app.post("/profileApiCall")
 def profileApi(request: Request, profileApiCall: profileApiCall):
@@ -671,19 +672,48 @@ def profileApi(request: Request, profileApiCall: profileApiCall):
     #with the given user, insert their profile picture into the db
     user =  request.session.get("username")
 
+
     conn = sqlite3.connect("userPass.db")
+    conn2 = sqlite3.connect("hvz.db")
+    conn2.row_factory = sqlite3.Row #Make data indexable rows
     conn.row_factory = sqlite3.Row #Make data indexable rows
     cursor = conn.cursor() #Write to the db
+    cursor2 = conn2.cursor() #Write to the db
     
     cursor.execute(f"""
         UPDATE userPass SET profilePic='{profileApiCall.profilePic}' WHERE username='{user}'
     """)
+
+    cursor2.execute(f"""
+        UPDATE hvzPlayers SET profilePic='{profileApiCall.profilePic}' WHERE name='{user}'
+    """)
+
+    conn2.commit()
+    cursor2.close()
+
     conn.commit()
     cursor.close()
     print("profileAdded")
     
     return "profileAdded"
     
+
+@app.post("/updateTeam")
+def updateTeam(request: Request, changeTeam: changeTeam):
+    user =  request.session.get("username")
+
+    conn = sqlite3.connect("hvz.db")
+    conn.row_factory = sqlite3.Row #Make data indexable rows
+    cursor = conn.cursor() #Write to the db
+
+    cursor.execute(f"""
+        UPDATE hvzPlayers SET customTeam='{changeTeam.team}' WHERE name='{user}'
+    """)
+    conn.commit()
+    cursor.close()
+    print(f"teamUpdated for {user}")
+    return "teamUpdated"
+
 
 
 
@@ -704,6 +734,9 @@ class registerCriteria(BaseModel):
 class loginCriteria(BaseModel):
     username: str
     password: str
+
+class usernameToAcceptReject(BaseModel):
+    username: str
 
 class secretKeyCriteria(BaseModel):
     webPass: str 
@@ -767,7 +800,7 @@ def verifyRegister(registerPerson: registerCriteria):
     if registerPerson.password != registerPerson.passwordReenter:
         cursor.close() 
         print(f"passwords don't match")
-        return "passwordsDontMatch"
+        return "Passwords do not match"
         # return {
         #     "code": "failed",
         #     "message": "passwords don't match"
@@ -785,7 +818,7 @@ def verifyRegister(registerPerson: registerCriteria):
             # } 
 
     if " " in registerPerson.username: #Make sure there's no spaces in their username
-        return "noSpacesInUsername"
+        return "No spaces in a username"
 
     hashedPass = bcrypt.hashpw(registerPerson.password.encode('utf-8'), bcrypt.gensalt()).decode("utf-8") #Decode at the end to prevent encoding twice
     #Triple quotes used for single inner quotes to work as intended (to make it a string)
@@ -798,12 +831,56 @@ def verifyRegister(registerPerson: registerCriteria):
     )
 
     conn.commit() #Commit our changes
-    
-    
 
-    cursor.close()
-     
+    cursor.close()   
     return f"successful"
+
+@app.post("/rejectIntoWeeklong")
+def rejectIntoWeeklong(usernameToAcceptReject: usernameToAcceptReject):
+
+    conn = sqlite3.connect("userPass.db")
+    conn.row_factory = sqlite3.Row #Make data indexable rows
+    cursor = conn.cursor() #Write to the db
+
+    #Just sign them up
+    cursor.execute(f"""
+        UPDATE userPass SET signedUp={False} WHERE username='{usernameToAcceptReject.username}'
+    """)
+    conn.commit()
+    cursor.close()
+
+    return "addedToRequestTable"
+
+
+
+@app.post("/acceptIntoWeeklong")
+def acceptIntoWeeklong(usernameToAcceptReject: usernameToAcceptReject):
+    """
+    Given a username, accept them into the weeklong
+    """
+    users = sqlite3.connect("userPass.db")
+    players = sqlite3.connect("hvz.db")
+    players.row_factory = sqlite3.Row
+    users.row_factory = sqlite3.Row
+    
+    cursor = users.cursor()
+    cursor2 = players.cursor()
+
+    cursor.execute(f"""
+        SELECT * FROM userPass WHERE username='{usernameToAcceptReject.username}'
+    """)
+    user = cursor.fetchone()
+    if user == None:
+        return "User not found"
+    
+    cursor2.execute(f"""
+        INSERT INTO hvzPlayers (name, profileImg, team, tags, daysAliveCount) VALUES ('{usernameToAcceptReject.username}', '{user['profilePic']}', 'Human', 0, 0)
+    """)
+    
+    players.commit()
+    cursor2.close()
+    cursor.close()
+    return "Accepted"
 
 
 
@@ -842,7 +919,7 @@ def verifyRegister(loginPerson: loginCriteria, request: Request):
             
 
     cursor.close()
-    return "noPassForUser"
+    return "Username does not exist or password is incorrect" #If not, return error
 
 
 
@@ -978,7 +1055,7 @@ class ChangePlayerRequest(BaseModel):
 
 
 class IncrementDecrementTag(BaseModel):
-    id: int #Just need the id since we'll fetch the tag for the id
+    username: str #Just need the id since we'll fetch the tag for the id
 
 class deleteAll(BaseModel):
     webPass: str #At least have a password for this
@@ -989,13 +1066,15 @@ class approveBaseClass(BaseModel):
 
 
 class changeAttribute(BaseModel):
-    webPass: str #At least have a password for this
-    id: int
+    username: str
+
+
+class hiddenOZUser(BaseModel):
+    username: str
 
 class zombinizeOrHumanize(BaseModel):
-    webPass: str #At least have a password for this
-    id: int
-    zombieOrHuman: str # "Zombie" "Human"
+    username: str
+    team: str # "Zombie" "Human"
 
 class addMissionTemplate(BaseModel):
     webPass: str 
@@ -1058,13 +1137,19 @@ def printSecretKeysPage(request: Request, db: Session = Depends(get_db), db2: Se
 def viewPlayersSignedUp(request: Request, db: Session = Depends(get_db), db2: Session = Depends(get_userPass_db)):
     players = db.query(hvzPlayer)
     users = db2.query(userPass)
+    playersInTable = []
 
+    for player in players:
+        playersInTable.append(player.name)
+
+    # print(playersInTable)
     isAdmin = verifyAdmin(request)
     
     return templates.TemplateResponse("viewPlayersSignedUp.html",
     {"request": request,
     "users": users,
-    "isAdmin": isAdmin})
+    "isAdmin": isAdmin,
+    "playersInTable": playersInTable})
 
 @app.post("/requestToPlayApiCall")
 def requestToPlayApiCall(plrRequest: deleteAll, request: Request):
@@ -1102,17 +1187,14 @@ def getAnnouncements(plrReq : deleteAll):
     announcements = cursor.fetchone()['announcement']
     return announcements
 
-@app.post("/makeHiddenOz")
-def makeHiddenOz(plrReq : changeAttribute):
-    if plrReq.webPass != config.webMasterPass:
-        return invalidPassMessage
-    
+@app.post("/makeOZ")
+def makeOZ(plrReq : hiddenOZUser):
     conn = sqlite3.connect("hvz.db")
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
     cursor.execute(f"""
-        SELECT hiddenOz from hvzPlayers where readjustingId={plrReq.id}
+        SELECT hiddenOz from hvzPlayers where name='{plrReq.username}'
     """)
     hiddenOzTrueFalse = cursor.fetchone()['hiddenOz']
     print(hiddenOzTrueFalse)
@@ -1123,11 +1205,11 @@ def makeHiddenOz(plrReq : changeAttribute):
 
 
     cursor.execute(f"""
-        UPDATE hvzPlayers SET hiddenOz = {hiddenOzTrueFalse} WHERE readjustingId={plrReq.id}
+        UPDATE hvzPlayers SET hiddenOz = {hiddenOzTrueFalse} WHERE name='{plrReq.username}'
     """)
     # Make them a zombie
     cursor.execute(f"""
-        UPDATE hvzPlayers SET team = 'Zombie' WHERE readjustingId={plrReq.id}
+        UPDATE hvzPlayers SET team = 'Zombie' WHERE name='{plrReq.username}'
     """)
     # UPDATE hvzPlayers SET hiddenOz = true WHERE readjustingId = 1
 
@@ -1136,6 +1218,9 @@ def makeHiddenOz(plrReq : changeAttribute):
 
 
     return "Changed"
+
+
+
 
 #Tag count += 1
 @app.post("/addTag")
@@ -1149,13 +1234,13 @@ def incTag(plrRequest: IncrementDecrementTag):
     cursor = conn.cursor() #Connect to our db
 
     cursor.execute(f"""
-        SELECT tags FROM hvzPlayers WHERE readjustingId =  {plrRequest.id}
+        SELECT tags FROM hvzPlayers WHERE name =  '{plrRequest.username}'
     """)
     playerTags = int(cursor.fetchone()[0]) + 1 #Get the current value there and just add 1
     print(playerTags)
     # print(playerTags)
     cursor.execute(f"""
-        UPDATE hvzPlayers SET tags = '{playerTags}' WHERE readjustingId =  {plrRequest.id}
+        UPDATE hvzPlayers SET tags = '{playerTags}' WHERE name =  '{plrRequest.username}'
     """)
     cursor.close() #Close our connection, then COMMIT (push) everything onto the db
     conn.commit()
@@ -1173,13 +1258,13 @@ def decTag(plrRequest: IncrementDecrementTag):
     cursor = conn.cursor() #Connect to our db
 
     cursor.execute(f"""
-        SELECT tags FROM hvzPlayers WHERE readjustingId =  {plrRequest.id}
+        SELECT tags FROM hvzPlayers WHERE name =  '{plrRequest.username}'
     """)
     playerTags = int(cursor.fetchone()[0]) - 1 #Get the current value there and just sub 1
     print(playerTags)
     # print(playerTags)
     cursor.execute(f"""
-        UPDATE hvzPlayers SET tags = '{playerTags}' WHERE readjustingId =  {plrRequest.id}
+        UPDATE hvzPlayers SET tags = '{playerTags}' WHERE name =  '{plrRequest.username}'
     """)
     cursor.close() #Close our connection, then COMMIT (push) everything onto the db
     conn.commit()
@@ -1267,28 +1352,19 @@ def secretZombinize(plrRequest: secretChange):
     return f"{idZombie}T{idHuman}T{tags}"
 
 @app.post("/zombinizeOrHumanize")
-def zombinize(plrRequest : zombinizeOrHumanize):
-    if plrRequest.webPass != config.webMasterPass:
-        return invalidPassMessage
+def zombinizeOrHumanize(plrRequest: zombinizeOrHumanize):
     conn = sqlite3.connect("hvz.db")
     conn.row_factory = sqlite3.Row #Make data indexable rows
     cursor = conn.cursor() #Write to the db
 
     cursor.execute(f"""
-        SELECT name FROM hvzPlayers WHERE readjustingId =  {plrRequest.id}
+        UPDATE hvzPlayers SET team = '{plrRequest.team}' WHERE name = '{plrRequest.username}'
     """)
-    name = cursor.fetchone()
-    print(name)
-    print(plrRequest.id)
-    cursor.execute(f"""
-        UPDATE hvzPlayers SET team = '{plrRequest.zombieOrHuman}' WHERE readjustingId =  {plrRequest.id}
-    """)
-    print(plrRequest.zombieOrHuman)
-
-    cursor.close()    
+    cursor.close()
     conn.commit()
+    return "success"
 
-    return plrRequest.zombieOrHuman
+
 
 @app.post("/addMission")
 def addMission(addMission : addMissionTemplate):
@@ -1327,43 +1403,30 @@ def delMission(delMission : changeAttribute):
 
 @app.post("/modPlayer")
 def modPlayerOnWeb(plrRequest: changeAttribute):
-    if plrRequest.webPass != config.webMasterPass:
-        return invalidPassMessage
-
     
+    username = plrRequest.username
 
+    #Now go to the userPass db after getting the username from the table
     conn = sqlite3.connect("hvz.db")
     conn.row_factory = sqlite3.Row #Access items by ['attributeName']
     cursor = conn.cursor() #Connect to our db
-    
-    #First get the name
-    cursor.execute(f"""
-        SELECT name FROM hvzPlayers WHERE readjustingId = {plrRequest.id}
-    """)
 
-    username = cursor.fetchone()['name'] #name = username since they're in the table
+    cursor.execute(f"""
+        SELECT ifMod FROM hvzPlayers where name='{username}'
+    """)
+    modStatus = bool(cursor.fetchone()[0]) #Fetches all usernames in a list
+
+    # if modStatus == None:
+    #     modStatus = False
+    modStatus = not modStatus
+    # print(modStatus)
+    # return "Test"
+    cursor.execute(f"""
+        UPDATE hvzPlayers SET ifMod = {modStatus} WHERE name = '{username}'
+    """)
+    conn.commit()
     cursor.close()
-
-    #Now go to the userPass db after getting the username from the table
-    conn = sqlite3.connect("userPass.db")
-    conn.row_factory = sqlite3.Row #Access items by ['attributeName']
-    cursor = conn.cursor() #Connect to our db
-
-    cursor.execute(f"""
-        SELECT password FROM userPass where username='{username}'
-    """)
-    password = cursor.fetchall() #Fetches all usernames in a list
-    if len(password) == 1: #If this username exists
-        cursor.execute(f"""
-            UPDATE userPass SET isAdmin = {True} WHERE username = '{username}'
-        """)
-        cursor.close()
-        conn.commit()
-        #The user was made an admin, but we want to display true. mods don't have the power to unmod people
-        return "True"#f"{username} was made an admin: {adminInfo.makeAdmin}"
-    else:
-        cursor.close()
-        return "Username not in DB"
+    return "SwappedModStatus"
 
     
 
@@ -1680,8 +1743,6 @@ def makeAdmin(adminInfo: adminInfo):
 
 @app.post("/addDay")
 def addDay(changeAttribute: changeAttribute):
-    if changeAttribute.webPass != config.webMasterPass:
-        return invalidPassMessage
     """
     Increments a player's days alive
     
@@ -1691,7 +1752,7 @@ def addDay(changeAttribute: changeAttribute):
     cursor = conn.cursor() #Connect to our db
 
     cursor.execute(f"""
-        SELECT daysAliveCount FROM hvzPlayers WHERE readjustingId =  {changeAttribute.id}
+        SELECT daysAliveCount FROM hvzPlayers WHERE name = '{changeAttribute.username}'
     """)
     days = cursor.fetchone()[0]
     if days == None:
@@ -1702,7 +1763,7 @@ def addDay(changeAttribute: changeAttribute):
     playerTags = days + 1 #Get the current value there and just sub 1
     print(playerTags)
     cursor.execute(f"""
-        UPDATE hvzPlayers SET daysAliveCount = '{playerTags}' WHERE readjustingId =  {changeAttribute.id}
+        UPDATE hvzPlayers SET daysAliveCount = '{playerTags}' WHERE name = '{changeAttribute.username}'
     """)
     cursor.close() #Close our connection, then COMMIT (push) everything onto the db
     conn.commit()
@@ -1710,9 +1771,7 @@ def addDay(changeAttribute: changeAttribute):
     return playerTags
 
 @app.post("/decDay")
-def addDay(changeAttribute: changeAttribute): 
-    if changeAttribute.webPass != config.webMasterPass:
-        return invalidPassMessage
+def decDay(changeAttribute: changeAttribute): 
     """
     Decrements a player's days alive
     
@@ -1722,7 +1781,7 @@ def addDay(changeAttribute: changeAttribute):
     cursor = conn.cursor() #Connect to our db
 
     cursor.execute(f"""
-        SELECT daysAliveCount FROM hvzPlayers WHERE readjustingId =  {changeAttribute.id}
+        SELECT daysAliveCount FROM hvzPlayers WHERE name =  '{changeAttribute.username}'
     """)
 
     days = cursor.fetchone()[0]
@@ -1733,7 +1792,7 @@ def addDay(changeAttribute: changeAttribute):
     playerTags = days - 1 #Get the current value there and just sub 1
     print(playerTags)
     cursor.execute(f"""
-        UPDATE hvzPlayers SET daysAliveCount = '{playerTags}' WHERE readjustingId =  {changeAttribute.id}
+        UPDATE hvzPlayers SET daysAliveCount = '{playerTags}' WHERE name =  '{changeAttribute.username}'
     """)
     cursor.close() #Close our connection, then COMMIT (push) everything onto the db
     conn.commit()
@@ -1796,20 +1855,19 @@ def delPlayer(changeAttribute: changeAttribute):
     """
     Within the table, delete a player
     """
-
-    if changeAttribute.webPass != config.webMasterPass:
-        return invalidPassMessage
     
     conn = sqlite3.connect("hvz.db")
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor() #Connect to our db
 
     cursor.execute(f"""
-        DELETE FROM hvzPlayers WHERE readjustingId = {changeAttribute.id}
+        DELETE FROM hvzPlayers WHERE name = '{changeAttribute.username}'
     """)
     cursor.close()
     conn.commit()
     return "deletedPlayer"
+
+
 
 @app.post("/scrapeUsernameList") 
 def scrapeUsernameList(changeAttribute: deleteAll, db: Session = Depends(get_userPass_db)): #Using a deleteAll request template here since we should just verify the password
@@ -1831,11 +1889,7 @@ def scrapeUsernameList(changeAttribute: deleteAll, db: Session = Depends(get_use
     
 
 
-# @app.post("/makeHuman")
-# @app.post("/plusDays")
-# @app.post("/minusDays")
-# @app.post("/delPlayer")
-    
+
 # app.run()  
 
 # RUN THIS

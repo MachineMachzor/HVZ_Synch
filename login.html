@@ -35,7 +35,6 @@
   <body>
     <div class="navbar">
       <a href="/">Home</a>
-      <a href="weeklong">Weeklong</a>
       <a href="https://www.instagram.com/nphvz/">Instagram</a>
       <a href="https://discord.com/invite/fMAfykJtgJ">Discord</a>
       <a href="/register" class="login-button">Register</a>
@@ -91,7 +90,7 @@
           success: function(response) {
             console.log(response);
             if (response != "success") {
-              $("#errorContainer").html("<p class='error-message'>" + data.message + "</p>");
+              $("#errorContainer").html("<p class='error-message'>" + response + "</p>");
             }
             else {
               window.location.href = "/";

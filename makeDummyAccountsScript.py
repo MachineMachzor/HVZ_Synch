@@ -48,10 +48,7 @@
 #         reqTxt = requests.post(url, json=payload)
 #         print(reqTxt.text)
 
-
-
 import requests
-
 
 print("Passwords = usernames, these lists are USERNAMES")
 dummyAccs = [f"dummy{i}" for i in range(1,11)]
@@ -68,14 +65,11 @@ for dummyAcc in dummyAccs:
     reqTxt = requests.post(url, json=payload)
     print(reqTxt.text)
 
-
 adminAccs = ['eboard', 'admin'] 
 presidents = ['admin']
 
-
 #eboard, then admin pass
 passwords = ['justForEboard', 'aVerySecurePassword']
-
 
 for adminAcc in adminAccs:
     url = "http://127.0.0.1:8000/apiVerifyRegister"

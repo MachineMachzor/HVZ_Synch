@@ -8,6 +8,9 @@ from sqlalchemy.orm import relationship
 
 from database import Base #For this to work, add __init__.py and delete the "." (meaning it's in the same folder)
 
+
+
+#If the user is in this database at all, then they are in the weeklong
 class hvzPlayer(Base):
     __tablename__ = "hvzPlayers" #The table within the dbfile
 
@@ -15,7 +18,8 @@ class hvzPlayer(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)#index=True) #primary_key=True auto incrments appended items with a unique id
     name = Column(String) #Not unique, but we can sort by names
     profileImg = Column(String) # Upload a string pfp, encode utf8
-    team = Column(String)
+    team = Column(String) #Human, zombie
+    customTeam = Column(String) # Any team they want
     taggedBy = Column(String) 
     tags = Column(Integer)
     ifMod = Column(Boolean)

@@ -1,2 +1,2 @@
-"C:\allPrograms\Python39\python.exe" "C:\Users\ringk\Documents\RandomScripts\HVZ\incDaysBatchScript.py"
+"C:\Program Files\Python311\python.exe" "D:\HVZ-main\incDaysBatchScript.py"
 pause
