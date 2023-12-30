@@ -35,11 +35,66 @@
       }
 
       .developer-footnote {
+        position: relative;
+        top: 50%;  
         font-size: 15px;
         font-weight: bold;
         color: rgb(255, 255, 255);
         text-align: center;
         margin-top: 50px;
+      }
+
+      /* New CSS for the image */
+      .image-container {
+        position: relative;
+        left: 25%;
+        /* top: 50%; */
+        /* transform: translateY(-50%); */
+        box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
+        background-color: white;
+        border: 2px solid orange;
+        width: 400px;
+        height: 400px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        right: 100px;
+      }
+
+      .image-container img {
+        max-width: 100%;
+        max-height: 100%;
+        /* width: 300px; */
+        
+      }
+      .new-box {
+        position: relative;
+        left: 32%;
+        transform: translateY(30%);
+        box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
+        background-color: white;
+        border: 2px solid orange;
+        width: 400px;
+        height: 400px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        
+      }
+
+      .new-box h2 {
+        font-size: 18px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      .new-box p {
+        font-size: 20px;
+        text-align: center;
+        line-height: 1.5;
       }
     </style>
   </head>
@@ -65,9 +120,67 @@
       <p class="welcome-message">Hello {{username}}</p>
     {% endif %}
 
+    <div>
+      <div class="image-container" style="display:inline-block">
+        <!-- <img width="300" style="float: right;" src='https://i.postimg.cc/8s1822R1/image-Middle-Left.png'/> -->
+        <img src="https://i.ibb.co/TM50MGV/image-Middle-Left.png" alt="image-Middle-Left">
+      </div>
+  
+  
+      <div class="new-box" style="display:inline-block">
+        <h2>New Paltz's Humans Vs Zombies</h2>
+        <p>Humans vs. Zombies is a modified game of tag, where zombies must do a two-handed tag on a human to tag them. Humans can defend themselves by throwing a sock or using their blaster to "stun" zombies. Here in New Paltz HvZ, we have various events and weekly games on Tuesdays from 8PM - 10PM in Parker Quad and Saturdays from 6PM - 8PM in the Elting Gym.</p>
+      </div>
+
+    </div>
+
+    <div>
+
+      <div class="new-box" style="display:inline-block; left: 10%; border: 0px white">
+        <h2>Mini Games!</h2>
+        <p>Every week we host mini games either in Parker Quad at 8PM on Tuesdays or in the Elting Gym on Saturdays at 6PM! Here we play various gamemodes and have fun! Blasters & Bands are always provided and students can feel welcome joining at any time!</p>
+      </div>
+
+      <div class="new-box" style="display:inline-block; left: 43%; border: 0px white; top: 30px">
+        <h2>Day Games!</h2>
+        <p>Day Games or Invitationals are games where we play Humans Vs Zombies for the entire day! Here students can partipate in Missions and follow the lore that our Content Team has developed! In addition, sometimes we hold collaborations with other clubs for more immersive games!</p>
+      </div>
+
+      <div class="new-box" style="display:inline-block; left: -5%; border: 0px white">
+        <h2>Weeklong!</h2>
+        <p>Weeklong is a semester-long event where students play Humans Vs Zombies for a week, starting on Sunday with a hidden Original Zombie and continuing with daily missions until Friday's finale. Club members are in play when outside in a safe area!</p>
+      </div>
+
+
+    </div>
+
+    <br><br>
+    <div class="new-box" style="display:inline-block; text-align: left; width: fit-content; left: 24%">
+      <h2>NPHvZ Rules</h2>
+      <p style="justify-content: flex-start; align-items: flex-start; text-align: left;">
+        1. Rule #1 "Don't be a D**k!" Follow good sportmanship and play fair!<br>
+        2. Players must be wearing an orange band at all times!<br>
+        3. Tags are completed by a two handed touch in appropriate places!<br>
+        4. Head shots/Neck shots don't count as stuns!<br>
+        5. All games always start with a whistle blow! Three whistles initiates a game pause, All players cannot move!<br>
+        6. Property & Personal belonging damage is prohibited!<br>
+        7. Clean up after yourself and clean up the campus after games!<br>
+        8. No vehicles are allowed during games/in play!<br>
+        9. Always wear proper attire!<br>
+        10. Blasters cannot be able to shoot over 100FPS!
+      </p>
+
+    </div>
+    
+
+
+    
+    
 
     <p class="developer-footnote">Developed by Taheemuddin Ahmed and Tanner Festa</p>
 
+
+      
 
     
         
