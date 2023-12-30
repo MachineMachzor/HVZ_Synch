@@ -739,8 +739,7 @@ class usernameToAcceptReject(BaseModel):
     username: str
 
 class secretKeyCriteria(BaseModel):
-    webPass: str 
-    secretKey: str
+    secretKey: str #For other person
 
 class changeAnnouncementsReq(BaseModel):
     webPass: str 
@@ -968,9 +967,50 @@ def verifySecretKey(secretKey: secretKeyCriteria, request: Request):
 
                 #Add 1 to the tags of the current logged in user since they guessed the secret key
                 addOneTagToThisUser = request.session.get("username")
+                conn = sqlite3.connect("hvz.db")
+                conn.row_factory = sqlite3.Row #Make data indexable rows
+                cursor = conn.cursor() #Write to the db
+
+                cursor.execute(f"""
+                    SELECT tags FROM hvzPlayers WHERE name =  '{addOneTagToThisUser}'
+                """)
+                playerTags = int(cursor.fetchone()[0]) + 1 #Get the current value there and just add 1
+                print(playerTags)
+                cursor.execute(f"""
+                    UPDATE hvzPlayers SET tags = '{playerTags}' WHERE name =  '{addOneTagToThisUser}'
+                """)
+
+        
+
+
+                cursor.execute(f"""
+                    SELECT hiddenOZ FROM hvzPlayers where name = '{addOneTagToThisUser}'
+                """)
+                hiddenOZ = bool(cursor.fetchone()[0])  
+                if hiddenOZ:
+                    taggedPersonName = "Hidden OZ"
+                else:
+                    taggedPersonName = addOneTagToThisUser
+                
+                cursor.execute(f"""
+                    UPDATE hvzPlayers SET taggedBy = '{taggedPersonName}' WHERE name = '{makePlayerZombie}'
+                """)
+
+                conn.commit()
+                cursor.close()
+
+                return "success"
+
+
+
+                # cursor.close()
+
+                cursor.close() #Close our connection, then COMMIT (push) everything onto the db
+                conn.commit()
+                return "success"
                 # print(f"addOneTagToThisUser: {addOneTagToThisUser}")
                 #And return the user found that had their secret key found to a zombie
-                return [addOneTagToThisUser,makePlayerZombie]
+                # return [addOneTagToThisUser,makePlayerZombie]
         
 
 @app.get("/missions")

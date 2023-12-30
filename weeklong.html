@@ -29,6 +29,7 @@
         </style>
     </head>
     
+
     <body>
         <div class="navbar">
             <a href="/">Home</a>
@@ -46,9 +47,34 @@
             {% endif %}
         </div>
 
+
+        
+
+        
+
         
         
         {% if userInTable or isAdmin or isPresident %}
+        <p style="font-size:24px; padding-left: 20px; font-weight: bold; color: white">Secret Key: <span style="color: yellow">{{ secretKey }}</span></p>
+
+        <div class="ui inverted segment" style="width: fit-content; padding-left: 20px;">
+          <div class="ui inverted form">
+            <div class="one field">
+              <div class="field">
+                <!-- <label></label> -->
+                <input id="key" placeholder="Other Players Key" type="text">
+              </div>
+            </div>
+            <div class="inline field">
+              <div class="ui checkbox">
+                <input type="checkbox" tabindex="0" class="hidden">
+              </div>
+            </div>
+            <div id="submit" class="ui submit button">Submit</div>
+          </div>
+          <div id="errorContainer"></div>
+        </div>
+
         <table class="ui inverted table">
             <thead>
               <tr>
@@ -58,6 +84,11 @@
               </tr>
             </thead>
             <tbody>
+
+              {% if isPresident %}
+                <!-- <button class="ui whitish-grey big rounded button" style="padding-left: 20px;" onclick="deleteAll()">Delete All</button> -->
+              {% endif %}
+              
               {% for user in users %}
                 {% for player in players %}
                     {% if user.username == player.name %}
@@ -113,6 +144,41 @@
 
 
 <script>
+
+  $(document).ready(function() {
+    $("#submit").click(function() {
+      var key = $("#key").val();
+      if (key != "")
+      {
+        data = {
+          secretKey: key
+        }
+        
+        $.ajax({
+          url: "/checkSecretKey",
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(data),
+          dataType: "json",
+          success: function(response) {
+            console.log(response);
+            // location.reload()
+            if (response == null)
+            {
+              $("#errorContainer").html("<p style='color: red'>Invalid Key - Make sure you are a zombie and this key is for a human who got tagged. If true, double check the person's key.</p>");
+            }
+            else
+            {
+              // $("#errorContainer").html("<p style='color: green'>Key Accepted</p>");
+              location.reload();
+            }
+          }
+        });
+
+      }
+    });
+  });  
+
   function requestToPlay() {
     const payload = {
       webPass: "t2]9k4%,AyW$k}fU"
