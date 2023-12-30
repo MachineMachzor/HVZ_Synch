@@ -368,6 +368,7 @@ def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Dep
 
     # Load all users from login
     users = db2.query(userPass)
+    print(f"Logged in: {loggedInSession}")
 
     return templates.TemplateResponse("home.html", 
     {"request": request, 
@@ -397,7 +398,7 @@ def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Dep
     # request.session['username'] = ""
 
     #For HVZ table with stats
-    headers = ['Name', 'Tagged By', 'Tags', 'Moderator', "Days Alive"]
+    headers = ['Profile', 'Name', 'Tagged By', 'Tags', 'Moderator', "Days Alive"]
     # print(uuid.uuid4().hex[:8].upper())
 
     # Should codes to turn people into a zombie be similar to "164EFDD8" or "taco13294"

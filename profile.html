@@ -4,7 +4,6 @@
   <head>
     <title>New Paltz HVZ</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
       body {
         background-color: rgb(31, 31, 32);
@@ -33,20 +32,23 @@
   <body>
     <div class="navbar">
       <a href="/">Home</a>
-      
+      <a href="weeklong">Weeklong</a>
       <a href="https://www.instagram.com/nphvz/">Instagram</a>
       <a href="https://discord.com/invite/fMAfykJtgJ">Discord</a>
-      {% if logged_in == False %}
-        <a href="/login" class="login-button" id="login">Login</a>
-      {% else %}
-        <a href="weeklong">Weeklong</a>
-        <a href="/profile">Profile</a>
-        <a href="/logout" class="login-button" id="logout">Logout</a>
-      {% endif %}
+      <a href="/profile">Profile</a>
+      <a href="/logout" class="login-button" id="login">Logout</a>
     </div>
         
+        <h1>Welcome to My Website</h1>
+        <p>This is the home page.</p>
         
     </body>
 </html>
 
 
+<!-- 
+
+    
+
+
+ -->

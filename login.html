@@ -1,6 +1,8 @@
+
 <html>
   <head>
     <title>New Paltz HVZ</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css">
     <style>
       body {
@@ -24,6 +26,9 @@
         font-size: large;
         float: right;
       }
+      .error-message {
+        color: red;
+      }
     </style>
   </head>
   
@@ -41,11 +46,11 @@
           <div class="two fields">
             <div class="field">
               <label>Username</label>
-              <input placeholder="Username" type="text">
+              <input id="username" placeholder="Username" type="text">
             </div>
             <div class="field">
               <label>Password</label>
-              <input placeholder="Password" type="password">
+              <input id="password" placeholder="Password" type="password">
             </div>
           </div>
           <div class="inline field">
@@ -53,12 +58,73 @@
               <input type="checkbox" tabindex="0" class="hidden">
             </div>
           </div>
-          <div class="ui submit button">Login</div>
+          <div id="login" class="ui submit button">Login</div>
         </div>
+        <div id="errorContainer"></div>
     </div>
         
     </body>
 </html>
+
+
+<script>
+  $(document).ready(function() {
+    $("#login").click(function() {
+      var username = $("#username").val();
+      var password = $("#password").val();
+
+      if (username == "" || password == "") {
+        $("#errorContainer").html("<p class='error-message'>Please fill out all fields.</p>");
+      }
+      else {
+        var loginData = {
+          username: username,
+          password: password
+        }
+
+        $.ajax({
+          url: "/apiLogin",
+          type: "POST",
+          contentType: "application/json",
+          data: JSON.stringify(loginData),
+          dataType: "json",
+          success: function(response) {
+            console.log(response);
+            if (response != "success") {
+              $("#errorContainer").html("<p class='error-message'>" + data.message + "</p>");
+            }
+            else {
+              window.location.href = "/";
+            }
+          }
+        });
+
+
+      }
+
+    });
+  
+    // $("#save").click(function() {
+  
+    //   var textareaContent = $("#symbols").val();
+    //   var symbols = textareaContent.split("\n");
+  
+    //   for (var i = 0; i < symbols.length; ++i) {
+    //     console.log(symbols[i]);
+        
+    //     $.ajax({
+    //       url: '/stock',
+    //       type: 'POST',
+    //       contentType: 'application/json',
+    //       data: JSON.stringify({ "symbol": symbols[i] }),
+    //       dataType: 'json'
+    //     });
+    //   }
+  
+    //   $('.ui.modal').modal('hide');
+    // });
+  });
+</script>
 
 
 <!-- 

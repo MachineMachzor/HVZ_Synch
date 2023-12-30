@@ -1,7 +1,9 @@
+
 <html>
   <head>
     <title>New Paltz HVZ</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.5.0/dist/semantic.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
       body {
         background-color: rgb(31, 31, 32);
@@ -24,6 +26,9 @@
         font-size: large;
         float: right;
       }
+      .error-message {
+        color: red;
+      }
     </style>
   </head>
   
@@ -41,15 +46,15 @@
           <div class="two fields">
             <div class="field">
               <label>Username</label>
-              <input placeholder="Username" type="text">
+              <input id="username" placeholder="Username" type="text">
             </div>
             <div class="field">
               <label>Password</label>
-              <input placeholder="Password" type="password">
+              <input id="password" placeholder="Password" type="password">
             </div>
             <div class="field">
                 <label>Re-Enter Password</label>
-                <input placeholder="Re-Enter Password" type="password">
+                <input id="passwordReenter" placeholder="Re-Enter Password" type="password">
               </div>
           </div>
           <div class="inline field">
@@ -57,17 +62,54 @@
               <input type="checkbox" tabindex="0" class="hidden">
             </div>
           </div>
-          <div class="ui submit button">Register</div>
+          <div class="ui submit button" id="register">Register</div>
         </div>
+        <div id="errorContainer"></div>
     </div>
         
     </body>
 </html>
 
-
-<!-- 
-
-    
-
-
- -->
+<script>
+  $(document).ready(function() {
+    $("#register").click(function() {
+      var username = $("#username").val();
+      var password = $("#password").val();
+      var passwordReenter = $("#passwordReenter").val();
+      console.log(username, password, passwordReenter)
+      
+      
+      if (username === "" || password === "" || passwordReenter === "") {
+        $("#errorContainer").html("<p class='error-message'>Please fill in all fields.</p>");
+      } else {
+        // Call /apiVerifyRegister with the parameters
+        var registerData = {
+          username: username,
+          password: password,
+          passwordReenter: passwordReenter
+        };
+        
+        $.ajax({
+          url: '/apiVerifyRegister',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(registerData),
+          dataType: 'json',
+          success: function(response) {
+            // Handle success response
+            if (response != "successful")
+              $("#errorContainer").html("<p class='error-message'>" + response + "</p>");
+            else
+            {
+              window.location.href = "/login";
+            }
+              
+          },
+          error: function(error) {
+            // Handle error response
+          }
+        });
+      }
+    });
+  });
+</script>
