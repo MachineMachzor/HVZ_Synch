@@ -198,12 +198,13 @@ async def token_generate(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 #Making the icon
-# favicon_path = r'D:\HVZ-main\iconImg.ico'
+favicon_path = r"D:/HVZ-main/iconTopLeft.ico"
 
-# # #include_in_schema makes it not be searchable with this port
-# @app.get('/favicon.ico', include_in_schema=False)
-# async def favicon():
-#     return FileResponse(favicon_path)
+
+# #include_in_schema makes it not be searchable with this port
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return FileResponse(favicon_path)
 
 
 # isLoggedIn = False
