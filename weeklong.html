@@ -17,6 +17,13 @@
                 font-weight: bold;
                 margin-right: 10px;
             }
+            .centered {
+              font-size: 18px;
+              font-weight: bold;
+              color: rgb(255, 255, 255);
+              text-align: center;
+            }
+
             .navbar .login-button {
               background-color: rgb(54, 54, 54);
               border-radius: 5px;
@@ -55,6 +62,7 @@
         
         
         {% if userInTable or isAdmin or isPresident %}
+        
         <p style="font-size:24px; padding-left: 20px; font-weight: bold; color: white">Secret Key: <span style="color: yellow">{{ secretKey }}</span></p>
 
         <div class="ui inverted segment" style="width: fit-content; padding-left: 20px;">
@@ -74,7 +82,9 @@
           </div>
           <div id="errorContainer"></div>
         </div>
-
+        <p class="centered" style="color: green">Humans: {{humansCount}}</p>
+        <p class="centered" style="color: red">Zombies: {{zombiesCount}}</p>
+        <p class="centered">Total: {{totalCount}}</p>
         <table class="ui inverted table">
             <thead>
               <tr>

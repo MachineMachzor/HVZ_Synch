@@ -492,10 +492,21 @@ def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Dep
             """)
             curId += 1
     secretKey = ""
+    humansCount = 0
+    zombiesCount = 0
     for player in players:
         for user in users:
             if player.name == user.username and player.name == userLogged:
                 secretKey = user.secretKey
+            
+            if player.name == user.username:
+                if player.team == "Human" or player.hiddenOZ == True:
+                    humansCount += 1
+                else:
+                    zombiesCount += 1
+
+    
+    totalCount = humansCount + zombiesCount
 
     #Check if the announcements username is inserted
     # cursor.execute(f"""
@@ -555,6 +566,9 @@ def homepage(request: Request, db: Session = Depends(get_db), db2: Session = Dep
     "isOnTableOrSignedUp": isOnTableOrSignedUp,
     "signedUp": signedUp,
     "secretKey": secretKey,
+    "humansCount": humansCount,
+    "zombiesCount": zombiesCount,
+    "totalCount": totalCount,
     "modify":"noModify"})
 
 
