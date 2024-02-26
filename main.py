@@ -39,7 +39,7 @@ TODO: Users click sign up to be on the table, they'll be approved (could even do
 """
 
 
-app = FastAPI() #Init
+app = FastAPI() #Init 
 app.add_middleware(SessionMiddleware, secret_key="some-secret-stringl")
 # app.add_middleware(SessionMiddleware, secret_key="example")
 
